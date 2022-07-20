@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from /home/columpio/RiderProjects/RInGen/grammar/src/main/resources/SMTLIBv2.g4 by ANTLR 4.10.1
+// Generated from /home/columpio/RiderProjects/SMTLIB2/smtlibv2-grammar/src/main/resources/SMTLIBv2.g4 by ANTLR 4.10.1
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -691,16 +691,6 @@ public interface ISMTLIBv2Listener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitCmd_getValue([NotNull] SMTLIBv2Parser.Cmd_getValueContext context);
-	/// <summary>
-	/// Enter a parse tree produced by <see cref="SMTLIBv2Parser.cmd_lemma"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void EnterCmd_lemma([NotNull] SMTLIBv2Parser.Cmd_lemmaContext context);
-	/// <summary>
-	/// Exit a parse tree produced by <see cref="SMTLIBv2Parser.cmd_lemma"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void ExitCmd_lemma([NotNull] SMTLIBv2Parser.Cmd_lemmaContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SMTLIBv2Parser.cmd_pop"/>.
 	/// </summary>

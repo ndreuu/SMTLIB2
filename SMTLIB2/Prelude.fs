@@ -281,13 +281,11 @@ type originalCommand =
     | Definition of definition
     | Command of command
     | Assert of smtExpr
-//    | Lemma of symbol * sorted_var list * smtExpr
     override x.ToString() =
         match x with
         | Definition df -> df.ToString()
         | Command cmnd -> cmnd.ToString()
         | Assert f -> $"(assert {f})"
-//        | Lemma(pred, vars, lemma) -> Lemma.toStringCommand pred vars lemma
 
 let simplBinary zero one deconstr constr =
     let rec iter k = function

@@ -5,7 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Content Include="..\grammar\src\main\resources\SMTLIBv2.g4">
+      <Content Include="..\smtlibv2-grammar\src\main\resources\SMTLIBv2.g4">
         <Link>SMTLIBv2.g4</Link>
       </Content>
     </ItemGroup>
