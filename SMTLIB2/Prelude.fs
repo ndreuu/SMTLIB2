@@ -1,5 +1,28 @@
 [<AutoOpen>]
 module SMTLIB2.Prelude
+open System.IO
+
+type path = string
+
+let private walk_through (srcDir : path) targetDir gotoFile gotoDirectory transform =
+    let rec walk sourceFolder destFolder =
+        for file in Directory.GetFiles(sourceFolder) do
+            let name = Path.GetFileName(file)
+            let dest = gotoFile destFolder name
+            transform file dest
+        for folder in Directory.GetDirectories(sourceFolder) do
+            let name = Path.GetFileName(folder)
+            let dest = gotoDirectory destFolder name
+            walk folder dest
+    walk srcDir targetDir
+
+let walk_through_copy srcDir targetDir transform =
+    let gotoFile folder name = Path.Combine(folder, name)
+    let gotoDirectory folder name =
+            let dest = Path.Combine(folder, name)
+            Directory.CreateDirectory(dest) |> ignore
+            dest
+    walk_through srcDir targetDir gotoFile gotoDirectory transform
 
 type symbol = string
 type ident = string
@@ -222,12 +245,15 @@ type command =
     | SetOption of string
     | DeclareDatatype of datatype_def
     | DeclareDatatypes of datatype_def list
-    | DeclareFun of symbol * sort list * sort
+    | DeclareFun of symbol * bool * sort list * sort // bool = should be quoted
     | DeclareSort of symbol
     | DeclareConst of symbol * sort
     override x.ToString() =
         let constrEntryToString (constrOp, _, selOps) =
-            $"""({Operation.opName constrOp} {Operation.argumentTypes constrOp |> List.zip selOps |> List.map (fun (selOp, argSort) -> $"({Operation.opName selOp} {argSort})") |> join " "})"""
+            let op = Operation.opName constrOp
+            match selOps with
+            | [] -> $"({op})"
+            | _ -> $"""({op} {Operation.argumentTypes constrOp |> List.zip selOps |> List.map (fun (selOp, argSort) -> $"({Operation.opName selOp} {argSort})") |> join " "})"""
         let constrsOfOneADTToString = List.map constrEntryToString >> join " " >> sprintf "(%s)"
         let dtsToString dts =
             let sortNames, ops = List.unzip dts
@@ -245,9 +271,16 @@ type command =
         | SetOption l -> $"(set-option %s{l})"
         | DeclareConst(name, sort) -> $"(declare-const {name} {sort})"
         | DeclareSort sort -> $"(declare-sort {sort} 0)"
-        | DeclareFun(name, args, ret) -> $"""(declare-fun {name} ({args |> List.map toString |> join " "}) {ret})"""
+        | DeclareFun(name, shouldBeQuoted, args, ret) ->
+            let fullName = if shouldBeQuoted then $"|{name}|" else name
+            $"""(declare-fun {fullName} ({args |> List.map toString |> join " "}) {ret})"""
         | DeclareDatatype dt -> dtsToString [dt]
         | DeclareDatatypes dts -> dtsToString dts
+
+let DeclareFun(name, args, ret) = DeclareFun(name, false, args, ret)
+let (|DeclareFun|_|) = function
+    | command.DeclareFun(name, _, args, ret) -> Some(name, args, ret)
+    | _ -> None
 
 let private oldDtToNewDt oldDt = // TODO: delete this with refactoring
     let adtSort, fs = oldDt

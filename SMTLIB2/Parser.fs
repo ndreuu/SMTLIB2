@@ -150,6 +150,12 @@ type private SubstVarEnv(ctx : Context, osyms2nsyms, nvars2nsorts, qualIdToId) a
         osyms2nsyms.Clear()
         Dictionary.copyContents osyms2nsyms o'
 
+    member x.Clear () =
+        osyms2nsyms.Clear()
+        nvars2nsorts.Clear()
+        qualIdToId.Clear()
+        state.Clear()
+
     member x.InIsolation () = saver
 
     member private x.TryFindSymbol symbol =
@@ -159,7 +165,7 @@ type private SubstVarEnv(ctx : Context, osyms2nsyms, nvars2nsorts, qualIdToId) a
         match x.TryFindSymbol symbol with
         | Some symbol -> symbol
         | None -> failwith $"{symbol} is not found in the environment"
-
+    
     member x.AddSymbol symbol =
         let symbol' = IdentGenerator.gensymp symbol
         osyms2nsyms.[symbol] <- symbol'
@@ -174,9 +180,6 @@ type private SubstVarEnv(ctx : Context, osyms2nsyms, nvars2nsorts, qualIdToId) a
         x.InitWithItself ident'
         x.AddOne ident' s
         ident')
-
-    member private x.FindOrAddSymbol symbol =
-        Dictionary.getOrInitWith symbol osyms2nsyms (fun () -> IdentGenerator.gensymp symbol)
 
     override x.ReplaceOneVar(ident, sort) =
         let ident = x.AddSymbol ident
@@ -237,36 +240,50 @@ type private ThrowingErrorListener () =
 
 type private symbolVersion = Raw | Old | New
 
-and Parser () as this =
+and Parser (redefine : bool) as this = // redefine = whether to rename all identifiers from the input
     inherit Context()
     let interactiveReader = InteractiveReader ()
     let lexer = SMTLIBv2Lexer(interactiveReader)
     let parser = SMTLIBv2Parser(CommonTokenStream(lexer))
     let mutable env = SubstVarEnv(this)
-    let mutable redefine = true // whether to rename all identifiers from the input
     do
         parser.ErrorHandler <- BailErrorStrategy()
         parser.RemoveErrorListeners()
         parser.AddErrorListener(ThrowingErrorListener.INSTANCE)
 
+    new () = Parser(true)
+
     member x.Reset () =
         interactiveReader.ResetEverything()
         lexer.Reset()
         parser.Reset()
+    
+    member x.ResetEverything () =
+        env.Clear()
+        x.Clear()
+        x.Reset()
 
-    member private x.ParseSymbol version (e : SMTLIBv2Parser.SymbolContext) : string =
-        let symbol =
+    member private x.ParseAnySymbol version (e : SMTLIBv2Parser.SymbolContext) : string * bool =
+        let symbol, shouldBeQuoted =
             match e.GetChild(0) with
             | :? SMTLIBv2Parser.SimpleSymbolContext as s ->
                 match s.GetChild(0) with
                 | :? SMTLIBv2Parser.PredefSymbolContext as s -> s.GetChild(0).GetText()
                 | _ -> s.UndefinedSymbol().ToString()
-            | :? SMTLIBv2Parser.QuotedSymbolContext as s -> s.GetChild(0).GetText()
+                , false
+            | :? SMTLIBv2Parser.QuotedSymbolContext as s ->
+                let full = s.GetChild(0).GetText() // `|main|`
+                full.Substring(1, full.Length - 2), true // `main`
             | _ -> __unreachable__()
-        match version with
-        | Raw -> symbol
-        | Old -> if redefine then env.FindSymbol symbol else symbol
-        | New -> if redefine then env.AddSymbol symbol else env.InitWithItself symbol; symbol
+        let newSymbol =
+            match version with
+            | Raw -> symbol
+            | Old -> if redefine then env.FindSymbol symbol else symbol
+            | New -> if redefine then env.AddSymbol symbol else env.InitWithItself symbol; symbol
+        newSymbol, shouldBeQuoted
+
+    member private x.ParseSymbol version (e : SMTLIBv2Parser.SymbolContext) : string =
+        x.ParseAnySymbol version e |> fst
 
     member private x.ParseIndex version (e : SMTLIBv2Parser.IndexContext) =
         match e.GetChild(0) with
@@ -320,6 +337,9 @@ and Parser () as this =
         env.AddOne v s
         ((v, s), e)
 
+    member private x.And = if redefine then ande else And
+    member private x.Or = if redefine then ore else Or
+    
     member private x.ParseTerm (e : SMTLIBv2Parser.TermContext) =
         match e.GetChild(0) with
         | :? SMTLIBv2Parser.Spec_constantContext as c -> parseConstant c
@@ -336,8 +356,8 @@ and Parser () as this =
                 match () with
                 | _ when List.contains op ["and"; "or"; "not"; "=>"; "ite"] ->
                     match op, args with
-                    | "and", _ -> ande args
-                    | "or", _ -> ore args
+                    | "and", _ -> x.And args
+                    | "or", _ -> x.Or args
                     | "not", [arg] -> Not arg
                     | "=>", [i; t] -> Hence(i, t)
                     | "ite", [i; t; e] -> Ite(i, t, e)
@@ -483,10 +503,10 @@ and Parser () as this =
             x.AddOperation name (Operation.makeUserOperationFromSorts name [] sort)
             DeclareConst(name, sort) |> Command
         | :? SMTLIBv2Parser.Cmd_declareFunContext ->
-            let name = e.GetChild<SMTLIBv2Parser.SymbolContext>(0) |> x.ParseSymbol New
+            let name, shouldBeQuoted = e.GetChild<SMTLIBv2Parser.SymbolContext>(0) |> x.ParseAnySymbol New
             let argTypes, sort = e.sort() |> List.ofArray |> List.map (x.ParseSort Old) |> List.butLast
             x.AddOperation name (Operation.makeUserOperationFromSorts name argTypes sort)
-            DeclareFun(name, argTypes, sort) |> Command
+            command.DeclareFun(name, shouldBeQuoted, argTypes, sort) |> Command
         | :? SMTLIBv2Parser.Cmd_setLogicContext->
             let name = e.GetChild<SMTLIBv2Parser.SymbolContext>(0)
             SetLogic(x.ParseSymbol Raw name) |> Command
@@ -504,6 +524,7 @@ and Parser () as this =
     member x.ParseFile filename =
         let file = AntlrFileStream(filename)
         lexer.SetInputStream(file)
+        parser.InputStream.Seek(0)
         let commands = parser.start().script().command()
         let commands = x.ParseCommands commands
         commands
@@ -561,7 +582,6 @@ and Parser () as this =
         modelLines, singletonSorts @ sortsWithReps
 
     member x.ParseModel modelLines =
-        redefine <- false
         let modelLines =
             match modelLines with
             | "sat"::modelLines -> modelLines

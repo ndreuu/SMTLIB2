@@ -1,12 +1,20 @@
 module SMTLIB2.Context
 open System.Collections.Generic
+open System.Collections.Immutable
 
-type Context() =
-    let operations = Dictionary<_, _>(Operations.elementaryOperations)
+type Context() as this =
+    let operations = Dictionary<_, _>()
     let adts = Dictionary<ident, (operation * operation * operation list) list>() // adt-sort-name |-> [tester, constructor, [selector]]
     let freeSorts = HashSet<ident>()
-    let predefinedSymbols = HashSet<ident>(["Bool"; "Int"; "Array"; "="; "distinct"; "<"; ">"; "<="; ">="; "+"; "-"; "*"; "mod"; "div"])
+    let predefinedSymbols = ImmutableHashSet.Create<ident>("Bool", "Int", "Array", "=", "distinct", "<", ">", "<=", ">=", "+", "-", "*", "mod", "div")
+    do this.Clear()
 
+    member x.Clear () =
+        operations.Clear()
+        Dictionary.copyContents operations Operations.elementaryOperations
+        adts.Clear()
+        freeSorts.Clear()
+    
     member x.IsPredefinedSymbol s = predefinedSymbols.Contains(s)
 
     member x.FindSort ident argSorts =
@@ -25,11 +33,10 @@ type Context() =
     member x.TryFindDefinedOperation ident = Dictionary.tryFind ident operations
 
     member x.FillOperation opName argTypes =
-        match x.TryFindDefinedOperation opName with
-        | Some op ->
-            assert (Operation.argumentTypes op = argTypes)
-            op
-        | None -> Operations.findAndInstantiateGenericOperation opName argTypes
+        opt {
+            let! op = x.TryFindDefinedOperation opName
+            if Operation.argumentTypes op = argTypes then return op
+        } |> Option.defaultWith (fun () -> Operations.findAndInstantiateGenericOperation opName argTypes)
 
     member x.AddOperation name op = operations.Add(name, op)
 

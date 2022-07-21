@@ -1,0 +1,20 @@
+(set-logic HORN)
+(set-option :produce-proofs true)
+
+(declare-datatypes ((Nat 0)) (((S (projS Nat)) (Z))))
+(declare-datatypes ((list 0)) (((nil) (cons (head Nat) (tail list)))))
+
+(declare-fun drop (list Nat list) Bool)
+(assert (forall ((y list)) (drop y Z y)))
+(assert (forall ((x Nat) (y1 Nat) (y list) (r list))
+    (=> (drop r x y)
+        (drop r (S x) (cons y1 y)))))
+(assert (forall ((x Nat)) (drop nil (S x) nil)))
+
+(assert (forall ((n Nat) (l1 list) (l2 list) (r2 list) (r1 list))
+    (=> (and (drop l2 n l1)
+            (drop r2 n l2)
+            (drop r1 n l1))
+        (= r1 r2))))
+(check-sat)
+(get-proof)

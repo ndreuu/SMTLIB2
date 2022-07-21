@@ -45,6 +45,8 @@ let private eqDiseqPattern = function
 let (|Equality|_|) = eqDiseqPattern >> Option.bind (fun b -> if b then Some () else None)
 let (|Disequality|_|) = eqDiseqPattern >> Option.bind (fun b -> if not b then Some () else None)
 
+let private unaryMinusOp = Operation.makeElementaryOperationFromSorts "-" [IntSort] IntSort
+
 let findAndInstantiateGenericOperation opName argTypes =
     match opName, argTypes with
     | "select", [ArraySort(indexSort, itemSort) as arraySort; indexSort1] ->
@@ -54,4 +56,5 @@ let findAndInstantiateGenericOperation opName argTypes =
         Operation.makeElementaryOperationFromSorts "store" argTypes arraySort
     | "=", [typ1; typ2] when typ1 = typ2 -> equal_op typ1
     | "distinct", [typ1; typ2] when typ1 = typ2 -> distinct_op typ1
+    | "-", [IntSort] -> unaryMinusOp
     | _ -> failwith $"No generic operation with name {opName} and sorts {argTypes}"
