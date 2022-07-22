@@ -471,7 +471,7 @@ and Parser () as this =
         | :? SMTLIBv2Parser.Cmd_getInfoContext -> Command (GetInfo(e.info_flag().GetText()))
         | :? SMTLIBv2Parser.Cmd_setInfoContext -> Command (SetInfo(parseAttribute <| e.attribute()))
         | :? SMTLIBv2Parser.Cmd_assertContext ->
-            let expr = e.GetChild<SMTLIBv2Parser.TermContext>(0)
+            let expr = e.term(0)
             env.InIsolation () { return Assert(x.ParseTerm expr) }
         | :? SMTLIBv2Parser.Cmd_declareSortContext ->
             let sort = x.ParseSymbolAndNumeralAsSort (e.symbol(0)) (e.numeral())
@@ -521,26 +521,58 @@ and Parser () as this =
         let qid = m.Groups.["qid"].Value
         Some qid
 
-    member private x.ParseFiniteModelDatatypes modelLines =
+    member private x.ParseFiniteModelDatatypesCVC modelLines =
         let sorts = List.choose x.ParseFiniteModelDatatype modelLines
+        for sort, _ in sorts do
+            x.AddFreeSort(sort)
+        let reps = List.choose x.ParseRepresentative modelLines
+        if reps |> List.exists (fun rep -> rep.StartsWith("@uc"))
+            then x.ParseFiniteModelDatatypesCVC4 modelLines sorts reps
+            else x.ParseFiniteModelDatatypesCVC5 modelLines sorts reps
+
+    member private x.ParseFiniteModelDatatypesCVC4 modelLines sorts reps =
+        let rec iter sorts reps k =
+            match sorts with
+            | [] -> k []
+            | (sort, card)::sorts ->
+                let forThis, rest = List.splitAt card reps
+                let forThis = forThis |> List.map (fun rep -> let s = env.AddSymbol(rep) in env.AddOne s (FreeSort sort); s)
+                iter sorts rest (fun res -> k((sort, forThis)::res))
+        let modelLines =
+            match modelLines with
+            | "(model"::rest -> "("::rest
+            | _ -> modelLines
+        let modelLines = modelLines |> List.filter (fun line -> not <| line.StartsWith("(declare-sort "))
+        modelLines, iter sorts reps id
+
+    member private x.ParseFiniteModelDatatypesCVC5 modelLines sorts reps =
+        let reps = $"({reps |> Environment.join})"
         let singletonSorts = [
             for sort, card in sorts do
-                x.AddFreeSort(sort)
-                if card = 1 then // CVC does not output representatives for cardinality 1, so we should init them manually
+                if card = 1 then // cvc5 does not output representatives for cardinality 1, so we should init them manually
                     yield sort, [env.FindOrAddQualifiedIdent("@a0", FreeSort sort)] // "@a0" is a hardcoded prefix of CVC representatives
         ]
-        let reps = $"({List.choose x.ParseRepresentative modelLines |> Environment.join})"
         lexer.SetInputStream(CharStreams.fromString(reps))
-        let reps = parser.get_assertions_response().term() |> List.ofArray |> List.map x.ParseTerm |> List.choose (function Ident(v, FreeSort s) -> Some(v, s) | _ -> None)
+        let reps =
+            parser.get_assertions_response().term() |> List.ofArray
+            |> List.map x.ParseTerm
+            |> List.choose (function Ident(v, FreeSort s) -> Some(v, s) | _ -> None)
         let sortsWithReps = List.chunkBySecond reps
-        singletonSorts @ sortsWithReps
+        modelLines, singletonSorts @ sortsWithReps
 
     member x.ParseModel modelLines =
         redefine <- false
-        let sorts = x.ParseFiniteModelDatatypes modelLines
+        let modelLines =
+            match modelLines with
+            | "sat"::modelLines -> modelLines
+            | _ -> modelLines
+        let modelLines, sorts = x.ParseFiniteModelDatatypesCVC modelLines
         lexer.SetInputStream(CharStreams.fromString(Environment.join modelLines))
         parser.TokenStream <- CommonTokenStream(lexer)
-        sorts, parser.get_model_response().model_response() |> List.ofArray |> List.map x.ParseModelResponse
+        let gmr = parser.get_model_response()
+        let mr = gmr.model_response()
+        let res = mr |> List.ofArray |> List.map x.ParseModelResponse
+        sorts, res
 
     member x.ParseLine (line : string) =
         interactiveReader.Add(line)
