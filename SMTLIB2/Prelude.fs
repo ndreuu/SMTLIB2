@@ -234,6 +234,17 @@ module Datatype =
 
     let maxConstructorArity ((_, cs) : datatype_def) = cs |> List.map (thd3 >> List.length) |> List.max
 
+
+type asserted =
+    | Asserted of smtExpr
+    override x.ToString() = match x with Asserted x -> $"(asserted {x})"
+
+type hyperProof =
+    | HyperProof of asserted * hyperProof list * smtExpr
+    override x.ToString() = match x with HyperProof(assert', hyerProofs, smt) ->
+        let hyperProof = List.fold (fun acc x -> acc + "\n" + x.ToString()) "" hyerProofs
+        $"\n[\n((_ hyper_proof)\n{assert'.ToString()}{hyperProof}({smt.ToString()}))\n]\n"
+
 type command =
     | CheckSat
     | GetModel
@@ -248,6 +259,8 @@ type command =
     | DeclareFun of symbol * bool * sort list * sort // bool = should be quoted
     | DeclareSort of symbol
     | DeclareConst of symbol * sort
+    | Proof of hyperProof * asserted * smtExpr
+    
     override x.ToString() =
         let constrEntryToString (constrOp, _, selOps) =
             let op = Operation.opName constrOp
@@ -276,6 +289,7 @@ type command =
             $"""(declare-fun {fullName} ({args |> List.map toString |> join " "}) {ret})"""
         | DeclareDatatype dt -> dtsToString [dt]
         | DeclareDatatypes dts -> dtsToString dts
+        | Proof(hp, a, smt) -> $"(proof\n(mp {hp.ToString()}\n{a.ToString()} ({smt.ToString()})))"
 
 let DeclareFun(name, args, ret) = DeclareFun(name, false, args, ret)
 let (|DeclareFun|_|) = function

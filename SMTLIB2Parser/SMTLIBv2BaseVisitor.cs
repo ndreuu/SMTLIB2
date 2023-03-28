@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from /home/columpio/RiderProjects/SMTLIB2/smtlibv2-grammar/src/main/resources/SMTLIBv2.g4 by ANTLR 4.10.1
+// Generated from /home/andrew/RiderProjects/SMTLIB2-cc/smtlibv2-grammar/src/main/resources/SMTLIBv2.g4 by ANTLR 4.10.1
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -19,7 +19,6 @@
 // Ambiguous reference in cref attribute
 #pragma warning disable 419
 
-namespace SMTLIB2Parser {
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using IToken = Antlr4.Runtime.IToken;
@@ -996,4 +995,3 @@ public partial class SMTLIBv2BaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <return>The visitor result.</return>
 	public virtual Result VisitGeneral_response([NotNull] SMTLIBv2Parser.General_responseContext context) { return VisitChildren(context); }
 }
-} // namespace SMTLIB2Parser

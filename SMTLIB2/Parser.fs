@@ -6,7 +6,7 @@ open Antlr4.Runtime.Misc
 open Antlr4.Runtime.Tree
 open Context
 open SMTLIB2
-open SMTLIB2Parser
+// open SMTLIB2Parser
 
 let truth = BoolConst true
 let falsehood = BoolConst false
@@ -510,8 +510,31 @@ and Parser (redefine : bool) as this = // redefine = whether to rename all ident
         | :? SMTLIBv2Parser.Cmd_setLogicContext->
             let name = e.GetChild<SMTLIBv2Parser.SymbolContext>(0)
             SetLogic(x.ParseSymbol Raw name) |> Command
+        | :? SMTLIBv2Parser.Cmd_proofContext ->
+            e.proof() |> x.ParseProof |> Proof |> Command
         | e -> failwithf $"{e}"
 
+    member private x.ParseProof (expr : SMTLIBv2Parser.ProofContext) =
+        let asserted = expr.asserted() |> x.ParseAsserted
+        let hyperProof = expr.hyper_proof() |> x.ParseHyperProof
+//        let term = env.InIsolation () { return (x.ParseTerm <| expr.term()) }
+        let term = x.ParseTerm <| expr.term()
+        (hyperProof, asserted, term)
+    
+    member private x.ParseHyperProof (expr : SMTLIBv2Parser.Hyper_proofContext) =
+        let asserted = expr.asserted() |> x.ParseAsserted
+        let hyperProof = expr.hyper_proof() |> List.ofArray |> List.map x.ParseHyperProof
+        let term = x.ParseTerm <| expr.term()
+//        let term = env.InIsolation () { return (x.ParseTerm <| expr.term()) }
+        HyperProof(asserted, hyperProof, term)    
+
+    
+    member private x.ParseAsserted (expr : SMTLIBv2Parser.AssertedContext) =
+        let expr = expr.term()
+        env.InIsolation () { return Asserted(x.ParseTerm expr) }
+
+
+    
     member private x.ParseModelResponse (e : SMTLIBv2Parser.Model_responseContext) =
         match e.GetChild(1).GetText() with
         | "define-fun" -> x.ParseFunctionDefinition (e.function_def()) DefineFun

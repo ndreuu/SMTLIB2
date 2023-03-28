@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from /home/columpio/RiderProjects/SMTLIB2/smtlibv2-grammar/src/main/resources/SMTLIBv2.g4 by ANTLR 4.10.1
+// Generated from /home/andrew/RiderProjects/SMTLIB2-cc/smtlibv2-grammar/src/main/resources/SMTLIBv2.g4 by ANTLR 4.10.1
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -19,7 +19,6 @@
 // Ambiguous reference in cref attribute
 #pragma warning disable 419
 
-namespace SMTLIB2Parser {
 
 using Antlr4.Runtime.Misc;
 using IErrorNode = Antlr4.Runtime.Tree.IErrorNode;
@@ -1202,4 +1201,3 @@ public partial class SMTLIBv2BaseListener : ISMTLIBv2Listener {
 	/// <remarks>The default implementation does nothing.</remarks>
 	public virtual void VisitErrorNode([NotNull] IErrorNode node) { }
 }
-} // namespace SMTLIB2Parser

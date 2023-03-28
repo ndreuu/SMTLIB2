@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from /home/columpio/RiderProjects/SMTLIB2/smtlibv2-grammar/src/main/resources/SMTLIBv2.g4 by ANTLR 4.10.1
+// Generated from /home/andrew/RiderProjects/SMTLIB2-cc/smtlibv2-grammar/src/main/resources/SMTLIBv2.g4 by ANTLR 4.10.1
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -19,7 +19,6 @@
 // Ambiguous reference in cref attribute
 #pragma warning disable 419
 
-namespace SMTLIB2Parser {
 using Antlr4.Runtime.Misc;
 using IParseTreeListener = Antlr4.Runtime.Tree.IParseTreeListener;
 using IToken = Antlr4.Runtime.IToken;
@@ -992,4 +991,3 @@ public interface ISMTLIBv2Listener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitGeneral_response([NotNull] SMTLIBv2Parser.General_responseContext context);
 }
-} // namespace SMTLIB2Parser

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from /home/columpio/RiderProjects/SMTLIB2/smtlibv2-grammar/src/main/resources/SMTLIBv2.g4 by ANTLR 4.10.1
+// Generated from /home/andrew/RiderProjects/SMTLIB2-cc/smtlibv2-grammar/src/main/resources/SMTLIBv2.g4 by ANTLR 4.10.1
 
 // Unreachable code detected
 #pragma warning disable 0162
@@ -19,7 +19,6 @@
 // Ambiguous reference in cref attribute
 #pragma warning disable 419
 
-namespace SMTLIB2Parser {
 using System;
 using System.IO;
 using System.Text;
@@ -697,4 +696,3 @@ public partial class SMTLIBv2Lexer : Lexer {
 
 
 }
-} // namespace SMTLIB2Parser
