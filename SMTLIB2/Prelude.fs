@@ -204,6 +204,13 @@ type smtExpr =
         | Hence(i, t) -> $"(=> {i} {t})"
         | QuantifierApplication(qs, e) -> Quantifiers.toString qs e
 
+module Expr =
+    let makeConst name sort = Apply (UserDefinedOperation (name, [], sort), [])
+    let makeUnaryOp op x = Apply(op, [x])
+    let makeBinaryOp op x y = Apply(op, [x; y])
+    let makeBinary name arg1Sort arg2Sort resSort =
+      makeBinaryOp (Operation.makeElementaryOperationFromSorts name [arg1Sort; arg2Sort] resSort)
+
 let QuantifierApplication(qs, body) =
     match qs with
     | [] -> body

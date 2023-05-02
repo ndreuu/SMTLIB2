@@ -41,6 +41,8 @@ module Quantifiers =
 
     let map f (qs : quantifiers) = List.map f qs
 
+    let mapVars f (qs : quantifiers) = List.map (Quantifier.map f) qs
+
     let mapFold f z (qs : quantifiers) = List.mapFold f z qs
 
     let hasExists = List.exists (function ExistsQuantifier _ -> true | _ -> false)
