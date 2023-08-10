@@ -142,7 +142,7 @@ module Quantifier =
             | ForallQuantifier vars -> "forall", vars
             | ExistsQuantifier vars -> "exists", vars
             | StableForallQuantifier vars -> "forall", vars
-        fun body -> $"""(%s{name} (%s{vars |> List.map (fun (v, e) -> $"({v} {e})") |> join " "})%s{"\n\t"}%s{body})"""
+        fun body -> $"""(%s{name} (%s{vars |> List.map (fun (v, e) -> $"({v} {e})") |> join " "})%s{"\n    "}%s{body}%s{"\n  "})"""
 
 type quantifiers = quantifier list
 
@@ -201,7 +201,8 @@ type smtExpr =
         | And xs -> $"(and {atom_list_to_string xs})"
         | Or xs -> $"(or {atom_list_to_string xs})"
         | Not x -> $"(not {x})"
-        | Hence(i, t) -> $"(=> {i} {t})"
+        | Hence(i, t) ->
+            $"""(=>%s{"\n"}      %s{i.ToString()}%s{"\n"}      %s{t.ToString()}%s{"\n"}    )"""
         | QuantifierApplication(qs, e) -> Quantifiers.toString qs e
 
 module Expr =
@@ -339,7 +340,8 @@ type originalCommand =
         match x with
         | Definition df -> df.ToString()
         | Command cmnd -> cmnd.ToString()
-        | Assert f -> $"(assert {f})"
+        | Assert f ->
+            $"""(assert%s{"\n"}%s{"  "}{f.ToString()}%s{"\n"})"""
 
 let simplBinary zero one deconstr constr =
     let rec iter k = function
