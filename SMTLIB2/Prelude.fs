@@ -251,7 +251,7 @@ type hyperProof =
     | HyperProof of asserted * hyperProof list * smtExpr
     override x.ToString() = match x with HyperProof(assert', hyerProofs, smt) ->
         let hyperProof = List.fold (fun acc x -> acc + "\n" + x.ToString()) "" hyerProofs
-        $"\n[\n((_ hyper_proof)\n{assert'.ToString()}{hyperProof}({smt.ToString()}))\n]\n"
+        $"\n((_ hyper-res)\n{assert'.ToString()}{hyperProof}{smt.ToString()})\n"
 
 type command =
     | CheckSat

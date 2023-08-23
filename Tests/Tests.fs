@@ -1,5 +1,6 @@
 module Tests.Tests
 open NUnit.Framework
+open SMTLIB2.Parser
 
 [<SetUp>]
 let Setup () =

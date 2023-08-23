@@ -57,4 +57,5 @@ let findAndInstantiateGenericOperation opName argTypes =
     | "=", [typ1; typ2] when typ1 = typ2 -> equal_op typ1
     | "distinct", [typ1; typ2] when typ1 = typ2 -> distinct_op typ1
     | "-", [IntSort] -> unaryMinusOp
-    | _ -> failwith $"No generic operation with name {opName} and sorts {argTypes}"
+    | op, sorts when op = "+" || op = "-" || op = "*" -> Operation.makeElementaryOperationFromSorts "+" sorts IntSort
+    | n, sorts -> failwith $"can't find And Instantiate Generic Operation {n} with sorts {sorts}"

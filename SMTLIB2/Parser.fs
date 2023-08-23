@@ -517,15 +517,14 @@ and Parser (redefine : bool) as this = // redefine = whether to rename all ident
     member private x.ParseProof (expr : SMTLIBv2Parser.ProofContext) =
         let asserted = expr.asserted() |> x.ParseAsserted
         let hyperProof = expr.hyper_proof() |> x.ParseHyperProof
-//        let term = env.InIsolation () { return (x.ParseTerm <| expr.term()) }
         let term = x.ParseTerm <| expr.term()
         (hyperProof, asserted, term)
     
     member private x.ParseHyperProof (expr : SMTLIBv2Parser.Hyper_proofContext) =
-        // let asserted = expr.asserted() |> x.ParseAsserted
+        let asserted = expr.asserted() |> x.ParseAsserted
         let hyperProof = expr.hyper_proof() |> List.ofArray |> List.map x.ParseHyperProof
         let term = x.ParseTerm <| expr.term()
-        HyperProof(Asserted (BoolConst true), hyperProof, term)    
+        HyperProof(asserted, hyperProof, term)    
 
     
     member private x.ParseAsserted (expr : SMTLIBv2Parser.AssertedContext) =
@@ -543,7 +542,7 @@ and Parser (redefine : bool) as this = // redefine = whether to rename all ident
 
     member private x.ParseCommands = List.ofArray >> List.map x.ParseCommand
 
-    member x.ParseFile filename =
+    member x.ParseFile filename : originalCommand list =
         let file = AntlrFileStream(filename)
         lexer.SetInputStream(file)
         parser.InputStream.Seek(0)
