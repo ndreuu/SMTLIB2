@@ -297,7 +297,7 @@ type command =
             $"""(declare-fun {fullName} ({args |> List.map toString |> join " "}) {ret})"""
         | DeclareDatatype dt -> dtsToString [dt]
         | DeclareDatatypes dts -> dtsToString dts
-        | Proof(hp, a, smt) -> $"(proof\n(mp {hp.ToString()}\n{a.ToString()} ({smt.ToString()})))"
+        | Proof(hp, a, smt) -> $"(proof\nmp {hp.ToString()}\n{a.ToString()} {smt.ToString()})"
 
 let DeclareFun(name, args, ret) = DeclareFun(name, false, args, ret)
 let (|DeclareFun|_|) = function
