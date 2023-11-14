@@ -1,6 +1,7 @@
 [<AutoOpen>]
 module SMTLIB2.Prelude
 open System.IO
+open System.Numerics
 
 type path = string
 
@@ -170,7 +171,7 @@ module Quantifiers =
     let toString (qs : quantifiers) o = List.foldBack Quantifier.toString (squashStableIntoForall qs) (o.ToString())
 
 type smtExpr =
-    | Number of int64
+    | Number of BigInteger
     | BoolConst of bool
     | Ident of ident * sort
     | Apply of operation * smtExpr list
@@ -341,7 +342,13 @@ type originalCommand =
         | Definition df -> df.ToString()
         | Command cmnd -> cmnd.ToString()
         | Assert f ->
-            $"""(assert%s{"\n"}%s{"  "}{f.ToString()}%s{"\n"})"""
+            match f with
+            | Apply _ as e ->
+                $"""(assert%s{"\n"}%s{"  "}{(Hence (And [ BoolConst true ], e)).ToString()}%s{"\n"})"""    
+            | QuantifierApplication ([ ForallQuantifier _ as forallQ], (Apply _ as e)) ->
+                $"""(assert%s{"\n"}%s{"  "}{(QuantifierApplication ([ forallQ ], Hence (And [ BoolConst true ], e))).ToString()}%s{"\n"})"""    
+            | _ ->  $"""(assert%s{"\n"}%s{"  "}{f.ToString()}%s{"\n"})"""    
+            
 
 let simplBinary zero one deconstr constr =
     let rec iter k = function

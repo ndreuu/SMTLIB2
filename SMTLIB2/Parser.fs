@@ -1,5 +1,6 @@
 module SMTLIB2.Parser
 open System.Collections.Generic
+open System.Numerics
 open System.Text.RegularExpressions
 open Antlr4.Runtime
 open Antlr4.Runtime.Misc
@@ -197,7 +198,7 @@ type private SubstVarEnv(ctx : Context, osyms2nsyms, nvars2nsorts, qualIdToId) a
             return c
         } |> Option.defaultWith (fun () -> failwith $"Identifier is not found in the environment: {i}")
 
-let private parseNumeral (e : SMTLIBv2Parser.NumeralContext) : int64 = int64 <| e.Numeral().ToString()
+let private parseNumeral (e : SMTLIBv2Parser.NumeralContext) : BigInteger = BigInteger.Parse <| e.Numeral().ToString()
 
 let private parseConstant (e : SMTLIBv2Parser.Spec_constantContext) =
     match e.GetChild(0) with
@@ -312,8 +313,11 @@ and Parser (redefine : bool) as this = // redefine = whether to rename all ident
         let name = x.ParseSymbol New s
         let n = parseNumeral n
         match n with
-        | 0L -> name
+        | z when z = BigInteger.Zero -> name
         | _ -> failwith $"Generic sorts are not supported: {name} {n}"
+        // match n with
+        // | 0 -> name
+        // | _ -> failwith $"Generic sorts are not supported: {name} {n}"
 
     member private x.ParseSortedVars exprs =
         let parseSortedVar (expr : SMTLIBv2Parser.Sorted_varContext) =
