@@ -250,7 +250,8 @@ type asserted =
 
 type hyperProof =
     | HyperProof of asserted * hyperProof list * smtExpr
-    override x.ToString() = match x with HyperProof(assert', hyerProofs, smt) ->
+    override x.ToString() =
+        match x with HyperProof(assert', hyerProofs, smt) ->
         let hyperProof = List.fold (fun acc x -> acc + "\n" + x.ToString()) "" hyerProofs
         $"\n((_ hyper-res)\n{assert'.ToString()}{hyperProof}{smt.ToString()})\n"
 
