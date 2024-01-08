@@ -20,4 +20,11 @@
       <ProjectReference Include="..\SMTLIB2Parser\SMTLIB2Parser.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="JetBrains.dotTrace.CommandLineTools.linux-x64" Version="2023.3.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
 </Project>
