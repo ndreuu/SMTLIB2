@@ -175,6 +175,7 @@ type smtExpr =
     | BoolConst of bool
     | Ident of ident * sort
     | Apply of operation * smtExpr list
+    | Tester of operation * smtExpr
     | Let of (sorted_var * smtExpr) list * smtExpr
     | Match of smtExpr * (smtExpr * smtExpr) list
     | Ite of smtExpr * smtExpr * smtExpr
@@ -205,6 +206,10 @@ type smtExpr =
         | Hence(i, t) ->
             $"""(=>%s{"\n"}      %s{i.ToString()}%s{"\n"}      %s{t.ToString()}%s{"\n"}    )"""
         | QuantifierApplication(qs, e) -> Quantifiers.toString qs e
+        | Tester (op, e) ->
+            $"((_ is {op}) {e})"
+            
+
 
 module Expr =
     let makeConst name sort = Apply (UserDefinedOperation (name, [], sort), [])

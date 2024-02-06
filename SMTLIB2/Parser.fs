@@ -354,6 +354,18 @@ and Parser (redefine : bool) as this = // redefine = whether to rename all ident
             | ident -> ident |> env.GetSorted |> makePrimitiveTerm
         | _ ->
             match e.GetChild(1) with
+            | :? SMTLIBv2Parser.TesterContext as tester ->
+                let constructor =
+                    tester.identifier ()
+                    |> this.ParseIdentifier Raw
+                    |> env.TryFindDefinedOperation
+                    |> Option.defaultWith __unreachable__
+                let arg =
+                    e.identifier ()
+                    |> this.ParseIdentifier Raw
+                    |> env.GetSorted
+                    |> makePrimitiveTerm
+                Tester (constructor, arg)
             | :? SMTLIBv2Parser.Qual_identifierContext as op ->
                 let op = x.ParseQualifiedIdentifier op
                 let args = e.term() |> List.ofArray |> List.map x.ParseTerm
